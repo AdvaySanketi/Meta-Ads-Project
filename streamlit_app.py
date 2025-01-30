@@ -180,11 +180,12 @@ def main():
     
     search_query = st.text_input(
         "Enter your search query:",
-        placeholder="e.g., luxury anti-aging cream with retinol",
+        placeholder="e.g., luxury anti-aging cream",
         key="search_input"
     )
     
     if search_query:
+        search_query = search_query.lower()
         try:
             with st.spinner('Searching for relevant ads...'):
                 results = pipeline.search_ads(search_query)
