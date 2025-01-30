@@ -24,6 +24,7 @@ jiter==0.8.2
 jupyter_client==8.6.3
 jupyter_core==5.7.2
 multidict==6.1.0
+openai==1.59.9
 opencv-python==4.11.0.86
 parso==0.8.4
 platformdirs==4.3.6
