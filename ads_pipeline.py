@@ -487,20 +487,20 @@ def main():
         anthropic_api_key=anthropic_api_key,
         mongo_uri=mongo_uri,
         keywords_file='skincare_keywords.csv',
-        use_proxy=False,
+        use_proxy=True,
         verbose=False
     )
 
-    # keywords_data = pipeline.read_keywords_from_csv()
-    # if not keywords_data:
-    #     logging.error("No keywords found. Please check your CSV file.")
-    #     return
+    keywords_data = pipeline.read_keywords_from_csv()
+    if not keywords_data:
+        logging.error("No keywords found. Please check your CSV file.")
+        return
     
-    # ads = pipeline.collect_ads(keywords_data=keywords_data)
-    # processed_ads = pipeline.process_and_store()
+    ads = pipeline.collect_ads(keywords_data=keywords_data)
+    processed_ads = pipeline.process_and_store()
 
-    search_results = pipeline.search_ads(query="best skin care products")
-    print(len(search_results))
+    # search_results = pipeline.search_ads(query="best skin care products")
+    # print(len(search_results))
 
 if __name__ == "__main__":
     main() 

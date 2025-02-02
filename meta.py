@@ -13,7 +13,7 @@ import uuid
 import re
 import time
 from RateLimiter import RateLimiter
-from proxies import ProxyPool
+from proxies import RotatingProxyPool
 
 # Configure logging
 logging.basicConfig(
@@ -74,7 +74,7 @@ class FacebookScraper:
     def __init__(self, data_dir: str = "data", use_proxy: bool = True):
         self.data_dir = data_dir
         self.session = requests.Session()
-        self.proxy_pool = ProxyPool()
+        self.proxy_pool = RotatingProxyPool()
         self.use_proxy = use_proxy
 
         os.makedirs(data_dir, exist_ok=True)
@@ -217,14 +217,13 @@ class FacebookScraper:
 
         try:
             if self.use_proxy:
-                proxy = self.proxy_pool.get_proxy()
-                proxies = {
-                    "http": f'http://{proxy}',
-                    "https": f'http://{proxy}'
+                headers = {
+                    'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:87.0) Gecko/20100101 Firefox/87.0'
                 }
-
-                logging.info(f"Current Proxy: http://{proxy}")
-                response = self.session.post(url, data=data, proxies=proxies)
+                print(headers)
+                proxies = self.proxy_pool.get_file_proxy()
+                print(proxies)
+                response = self.session.post(url, data=data, headers=headers, proxies=proxies)
             else:
                 response = self.session.post(url, data=data)
             
