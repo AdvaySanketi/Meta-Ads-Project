@@ -64,7 +64,7 @@ class AdsPipeline:
             raise ValueError("Mongo URI must be provided either through constructor or MONGO_URI environment variable")
         self.client = MongoClient(self.mongo_uri)
         self.db = self.client["main"]
-        self.collection = self.db["meta-ads-project"]
+        self.collection = self.db["meta-ads-backup"]
             
         self.keywords_file = keywords_file
 

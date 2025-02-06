@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 import requests
 import json
 import logging
@@ -13,7 +14,7 @@ import uuid
 import re
 import time
 from RateLimiter import RateLimiter
-from proxies import RotatingProxyPool
+from proxies import ProxyPool
 
 # Configure logging
 logging.basicConfig(
@@ -72,9 +73,15 @@ class FacebookAd:
 class FacebookScraper:
     """Scraper for Facebook Ad Library"""
     def __init__(self, data_dir: str = "data", use_proxy: bool = True):
+        load_dotenv()
         self.data_dir = data_dir
         self.session = requests.Session()
-        self.proxy_pool = RotatingProxyPool()
+        self.proxy_pool = ProxyPool(
+            username=os.getenv("PROXY_USERNAME"),
+            password=os.getenv("PROXY_PWD"),
+            domain=os.getenv("PROXY_DOMAIN"),
+            port=os.getenv("PROXY_PORT")
+        )
         self.use_proxy = use_proxy
 
         os.makedirs(data_dir, exist_ok=True)
@@ -172,7 +179,7 @@ class FacebookScraper:
             logging.error(f"Error searching pages: {str(e)}")
             return []
 
-    @RateLimiter(max_calls=5, period=30)
+    @RateLimiter(max_calls=15, period=5)
     def get_page_ads(self, page_id: str,active:bool,country:List[str],limit:int,cursor:str=None) -> List[dict]:
         """Get ads for a specific page"""
         url = "https://www.facebook.com/api/graphql/"
@@ -220,15 +227,14 @@ class FacebookScraper:
                 headers = {
                     'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:87.0) Gecko/20100101 Firefox/87.0'
                 }
-                print(headers)
-                proxies = self.proxy_pool.get_file_proxy()
-                print(proxies)
+                proxies = self.proxy_pool.get_proxy()
                 response = self.session.post(url, data=data, headers=headers, proxies=proxies)
             else:
                 response = self.session.post(url, data=data)
             
             # Parse response
             data = self._parse_response(response.text)
+            print(data)
             if not data or 'data' not in data:
                 print(data)
                 logging.warning(f"Rate limit hit. Retrying in 60 seconds.")
@@ -236,7 +242,6 @@ class FacebookScraper:
                 time.sleep(retry_after)
                 self.get_page_ads(page_id,active,country,limit,cursor)
             else:
-                print("part-success")
                 ads = []
                 ad_archive_ids = set()
                 
@@ -273,25 +278,25 @@ class FacebookScraper:
                             'ad_archive_id': ad_archive_id,
                             'page_id': result.get('page_id'),
                             'page_name': result.get('page_name'),
-                        'status': result.get('is_active'),
-                        'ad_creation_time': result.get('start_date'),
-                        'ad_delivery_start_time': result.get('start_date'),
-                        'ad_delivery_stop_time': result.get('end_date'),
+                            'status': result.get('is_active'),
+                            'ad_creation_time': result.get('start_date'),
+                            'ad_delivery_start_time': result.get('start_date'),
+                            'ad_delivery_stop_time': result.get('end_date'),
                             'currency': result.get('currency'),
-                        'snapshot': snapshot,
-                        'publisher_platforms': result.get('publisher_platform', []),
-                        'languages': [],  # Not available in current response
-                        'spend': None,  # Not available in current response
-                        'impressions': result.get('impressions_with_index'),
-                        'target_locations': [],  # Not available in current response
-                        'target_ages': [],  # Not available in current response
-                        'target_genders': [],  # Not available in current response
-                        'target_interests': [],  # Not available in current response
-                        'potential_reach': result.get('reach_estimate'),
-                        'demographic_distribution': None,  # Not available in current response
-                        'region_distribution': None,  # Not available in current response
-                        'estimated_audience_size': None,  # Not available in current response
-                        'ad_snapshot_url': None  # Not available in current response
+                            'snapshot': snapshot,
+                            'publisher_platforms': result.get('publisher_platform', []),
+                            'languages': [],  # Not available in current response
+                            'spend': None,  # Not available in current response
+                            'impressions': result.get('impressions_with_index'),
+                            'target_locations': [],  # Not available in current response
+                            'target_ages': [],  # Not available in current response
+                            'target_genders': [],  # Not available in current response
+                            'target_interests': [],  # Not available in current response
+                            'potential_reach': result.get('reach_estimate'),
+                            'demographic_distribution': None,  # Not available in current response
+                            'region_distribution': None,  # Not available in current response
+                            'estimated_audience_size': None,  # Not available in current response
+                            'ad_snapshot_url': None  # Not available in current response
                         }
                         ads.append(ad)
 
@@ -385,11 +390,7 @@ class FacebookScraper:
 
         except Exception as e:
             if "ProxyError" in str(e) or "SSL" in str(e):
-                # proxy = get_proxy()
-                # proxies = {
-                #     "http": f'http://{proxy}',
-                #     "https": f'http://{proxy}'
-                # }
+                print(f"Error: {e}")
                 self.get_page_ads(page_id,active,country,limit,cursor)
             else:
                 logging.error(f"Error getting page ads: {str(e)}")
